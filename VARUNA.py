@@ -1,32 +1,60 @@
 import math
-import pandas
+from pandas import read_excel, notnull
+from tabulate import tabulate
 
-PARA = ['Electric Conductivity (mS/cm)', 'Dissolved Oxygen(mg/L)', 'pH', 'Chloride ion(mg/L)', 'Color(NTU)', 'Turbidity(NTU)', 'Total Dissolved Solids(mg/L)', 'Total Suspended Solids(mg/L)', 'NH4-N(mg/L)', 'NH3-N(mg/L)', 'Total Coliform(CFU/1000 ml)', 'Fecal Coliform(CFU/1000 ml)', 'Chemical Oxygen Demand(mg/L)', 'Biological Oxygen Demand(mg/L)', 'Chlorophyll(mg/L)', 'Fe(mg/L)', 'Pb(mg/L)', 'Cd(mg/L)', 'Cr(mg/L)', 'Zn(mg/L)', 'Hg(mg/L)', 'Oil & Grease(mg/L)', 'Pesticides(mg/L)']
-S_N = [2.25, 6, 8.5, 1000, 15, 5, 1000, 100, 0.3, 0.3, 5000, 5000, 250, 3, 0.01, 1, 0.01, 0.003, 0.05, 5, 0.001, 0.01, 0.00004]
+PARA = ['Electric Conductivity(mS/cm)', 'Dissolved Oxygen(mg/L)', 'pH', 'Chloride ion(mg/L)', 
+        'Color(NTU)', 'Turbidity(NTU)', 'Total Dissolved Solids(mg/L)', 'Total Suspended Solids(mg/L)', 
+        'NH4-N(mg/L)', 'NH3-N(mg/L)', 'Total Coliform(CFU/1000ml)', 'Fecal Coliform(CFU/1000ml)', 
+        'Chemical Oxygen Demand(mg/L)', 'Biological Oxygen Demand(mg/L)', 'Chlorophyll(mg/L)', 'Fe(mg/L)', 
+        'Pb(mg/L)', 'Cd(mg/L)', 'Cr(mg/L)', 'Zn(mg/L)', 'Hg(mg/L)', 'Oil & Grease(mg/L)', 'Pesticides(mg/L)']
+
+S_N = [2.25, 6, 8.5, 1000, 15, 5, 1000, 100, 0.3, 0.3, 5000, 5000, 
+       250, 3, 0.01, 1, 0.01, 0.003, 0.05, 5, 0.001, 0.01, 0.00004]
+
 V_I = [0, 14.6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 n = len(PARA)
 m = 0
-print("Select your option:\n 1.Manual Input 2.Excel Input")
+
+Para_NSF = ['pH', 'BOD', 'DO', 'TDS', 'Turbidity', 'Temperature', 'Nitrates', 'Phosphorus', 'Fecal Coliform']
+p = len(Para_NSF)
+
+print("Choose input method for WQI, CWQI & NSFWQI:\n 1.Manual Input 2.Excel Input")
 Opt = input('Choose:')
- 
+
 if Opt == '2':
-    df = pandas.read_excel('data.xlsx', sheet_name=0, header=None)
+    df = read_excel('data.xlsx', sheet_name=0, header=None)
     data_list = []
+    Vn_data = []
+    Nsf_data  =[]
     for row in df.values:
         row_list = []
         for cell in row:
-            if pandas.notnull(cell):
+            if notnull(cell):
                 row_list.append(cell)
         if len(row_list) != 0:
             data_list.append(row_list)
 
-    numbers = len(data_list[0]) - 1
+    for i in range(len(data_list)):
+        if data_list[i][0].upper() == 'NSFWQI':
+            Vn_data = data_list[2:i]
+            Nsf_data = data_list[i+2:]
+            break
+        
+    numbers = len(Vn_data[1]) - 1
     Vn = [[-1.0] * numbers for _ in range(n)]
     for para in PARA:
-        for data in data_list:
+        for data in Vn_data:
             if data[0].upper() == para.upper() and len(data) > 1:
                 m += 1
                 Vn[PARA.index(para)] = data[1:]
+
+    nsf_num = len(Nsf_data[1]) - 1
+    Vn_NSF = [[-1.0] * nsf_num for _ in range(p)]
+    for para in Para_NSF:
+        for data in Nsf_data:
+            if data[0].upper() == para.upper() and len(data) > 1:
+                m += 1
+                Vn_NSF[Para_NSF.index(para)] = data[1:]
 
 elif Opt == '1':
     numbers = int(input('Enter Numbers of Tests You Had Done: '))
@@ -44,6 +72,7 @@ elif Opt == '1':
 
 
 def WQI ():
+    Output = []
     wqi = []
     # Finding K
     S = 0
@@ -53,6 +82,10 @@ def WQI ():
     K = 1 / S
 
     for i in range(numbers):
+        WI = ['Wi']
+        WQI = ['WQI']
+        WQ = ['Water Quality']
+        G = ['Grade']
         # Finding WQI
         qiwi = 0
         wi = 0
@@ -62,22 +95,44 @@ def WQI ():
                 qn = ((Vn[j][i] - V_I[j]) / (S_N[j] - V_I[j])) * 100
                 qiwi += qn * Wn
                 wi += Wn
+                WI.append(str(Wn))
+                WQI.append("")
+                WQ.append("")
+                G.append("")
+
         wqi.append(qiwi / wi)
-        print("WQI = " + str(wqi[i]))
+        e = math.ceil(len(WI)/2)
+        WQI[e] = str(wqi[i])
+
+
+        #print("WQI = " + str(wqi[i]))
 
         # Comparison
         if wqi[i] >= 0 and wqi[i] <= 25:
-            print ("The Quality of the water is Excellent and it's grade is A")
+            WQ[e] = 'Excellent'
+            G[e] = 'A'
+            #print ("The Quality of the water is Excellent and it's grade is A")
         elif wqi[i] > 25 and wqi[i] <= 50:
-            print ("The Quality of the water is Good and it's grade is B")
+            WQ[e] = 'Good'
+            G[e] = 'B'
+            #print ("The Quality of the water is Good and it's grade is B")
         elif wqi[i] > 50 and wqi[i] <= 75:
-            print ("The Quality of the water is Poor and it's grade is C")
+            WQ[e] = 'Poor'
+            G[e] = 'C'
+            #print ("The Quality of the water is Poor and it's grade is C")
         elif wqi[i] > 75 and wqi[i] <= 100:
-            print("The Quality of the water is Very Bad and it's grade is D")
+            WQ[e] = 'Very Bad'
+            G[e] = 'D'
+           # print("The Quality of the water is Very Bad and it's grade is D")
         else:
-            print("The Quality of the water is Unfit for Drinking and it's grade is E")
-    print(wqi)
-    return wqi
+            WQ[e] ='Unfit for Drinking'
+            G[e] = 'E'
+           # print("The Quality of the water is Unfit for Drinking and it's grade is E")
+        Out = list(zip(WI, WQI, WQ, G))
+        Output.append(Out)
+    #print(wqi)
+    #print(Output)
+    return Output
 
 
 # CWQI TEST
@@ -118,23 +173,29 @@ def CWQI():
     F3 = nse / ((0.01 * nse )+ 0.01)
     CWQI = 100 - (math.sqrt(F1**2 + F2**2 + F3**2) / 1.732)
 
-    print("CWQi = " + str(CWQI))
+    #print("CWQi = " + str(CWQI))
     if CWQI >= 95 and CWQI <= 100:
-        print ("The Quality of the water is Excellent ")
+        G = 'Excellent'
+        #print ("The Quality of the water is Excellent ")
     elif CWQI >= 80 and CWQI < 95:
-        print ("The Quality of the water is Good ")
+        G = 'Good'
+        #print ("The Quality of the water is Good ")
     elif CWQI >= 65 and CWQI < 80:
-        print ("The Quality of the water is Fair ")
+        G = 'Fair'
+        #print ("The Quality of the water is Fair ")
     elif CWQI >= 45 and CWQI <= 65:
-        print("The Quality of the water is Marginal")
+        G = 'Marginal'
+        #print("The Quality of the water is Marginal")
     else:
-        print("The Quality of the water is Poor")
-    return CWQI
+        G = 'Poor'
+        #print("The Quality of the water is Poor")
+
+    Output = [['CWQi', 'Water Quality'], [str(CWQI), G]]
+    return Output
 
 def NSF():
-    Para_NSF = ['pH', 'BOD', 'DO', 'TDS', 'Turbidity', 'Temperature', 'Nitrates', 'Phosphorus', 'Fecal Coliform']
     Wi = [0.12, 0.1, 0.17, 0.08,0.08,0.1, 0.1,0.1, 0.15]
-    
+
     NSF_pH = [[2.30181082812661, 1.62271191278459],
     [2.50301866091339, 3.24542382556919],
     [2.68410515778936, 3.44826977861786],
@@ -803,25 +864,30 @@ def NSF():
     [100000, 3]]
 
     NSF_S = [NSF_pH, NSF_BOD, NSF_DO, NSF_TDS, NSF_Turbidity, NSF_Temp, NSF_Nitrates, NSF_P, NSF_FC]
-    p = len(NSF_S)
-    numbers = int(input('Enter Numbers of Tests You Had Done: '))
-    Vn_NSF = [[-1.0] * numbers for _ in range(n)]
-    for i in range (p):
-        print('Enter The value of ' + Para_NSF[i] + ':')
-        for j in range(numbers):
-            In = input(str(j + 1) + ':')
-            try:
-                Vn_NSF[i][j] = float(In)
-            except ValueError:
-                break
-        
-    NSF_Y = [[-1.0] * numbers for _ in range(p)]
+    
+    if Opt == '1':
+        numbers = int(input('Enter Numbers of Tests You Had Done: '))
+        for i in range (p):
+            print('Enter The value of ' + Para_NSF[i] + ':')
+            for j in range(numbers):
+                In = input(str(j + 1) + ':')
+                try:
+                    Vn_NSF[i][j] = float(In)
+                except ValueError:
+                    break
+           
+
+
+    NSF_Y = [[-1.0] * nsf_num for _ in range(p)]
 
     # print(NSF_S)
+    Qi = ['Qi']
+    NSFWqi = ['NSFWQI']
+    WQ = ['Water Quality']
 
     for i in range(p):
         if Vn_NSF[i][0] != -1:
-            for j in range(numbers):
+            for j in range(nsf_num):
                 x = Vn_NSF[i][j]
                 for k in range(len(NSF_S[i])):
                     x2 = NSF_S[i][k][0]
@@ -831,32 +897,55 @@ def NSF():
                         y2 = NSF_S[i][k][1]
                         d = (y2-y1)/(x2-x1)
                         NSF_Y[i][j] = y1 + d*(x-x1)
+                        Qi.append (str(NSF_Y[i][j]))
+                        NSFWqi.append("")
+                        WQ.append("")
                         break
-
+    #print ("Qi =" +str (NSF_Y))               
     nsfwqi = 0
+
     for i in range (p):
         nsF = 0
         if  NSF_Y[i][0] != -1:
-            for j in range (numbers):
+            for j in range (nsf_num):
                 nsF += NSF_Y[i][j]
-            R = nsF / numbers 
+            R = nsF / nsf_num 
             nsfwqi += R*Wi[i]
-
-    print("NSFWQI =" +str (nsfwqi))
+            
+    e = math.ceil(len(Qi)/2)
+    NSFWqi[e] = str(nsfwqi)
+    #print("NSFWQI =" +str (nsfwqi))
 
     if nsfwqi >= 91 and nsfwqi <= 100:
-        print ("The Quality of the water is Excellent ")
+        WQ[e] = 'Excellent'
+        #print ("The Quality of the water is Excellent ")
     elif nsfwqi >= 71 and nsfwqi < 91:
-        print ("The Quality of the water is Good ")
+        WQ[e] = 'Good' 
+        #print ("The Quality of the water is Good ")
     elif nsfwqi >= 51 and nsfwqi < 71:
-        print ("The Quality of the water is Moderate ")
+        WQ[e] = 'Moderate'
+        #print ("The Quality of the water is Moderate ")
     elif nsfwqi >= 26 and nsfwqi <= 51:
-        print("The Quality of the water is Poor")
+        WQ[e] = 'Poor'
+        #print("The Quality of the water is Poor")
     else:
-        print("The Quality of the water is Very Poor")
-    return nsfwqi
-wqi = WQI()
-cwqi = CWQI()
-nsf = NSF()
+        WQ[e] = 'Very poor'
+        #print("The Quality of the water is Very Poor")
+    
+    Output = list(zip(Qi, NSFWqi, WQ))
+    return Output
 
+
+
+wqi = WQI()
+for i in wqi:
+    table = tabulate(i, headers="firstrow", tablefmt="fancy_grid")
+    print(table)
+cwqi = CWQI()
+table = tabulate(cwqi, headers="firstrow", tablefmt="fancy_grid")
+print(table)
+
+nsf = NSF()
+table = tabulate(nsf, headers="firstrow", tablefmt="fancy_grid")
+print(table)
 end = input()
