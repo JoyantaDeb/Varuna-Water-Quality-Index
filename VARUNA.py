@@ -8,6 +8,8 @@ PARA = ['Electric Conductivity(mS/cm)', 'Dissolved Oxygen(mg/L)', 'pH', 'Chlorid
         'Chemical Oxygen Demand(mg/L)', 'Biological Oxygen Demand(mg/L)', 'Chlorophyll(mg/L)', 'Fe(mg/L)', 
         'Pb(mg/L)', 'Cd(mg/L)', 'Cr(mg/L)', 'Zn(mg/L)', 'Hg(mg/L)', 'Oil & Grease(mg/L)', 'Pesticides(mg/L)']
 
+Para = ['Parameters']
+
 S_N = [2.25, 6, 8.5, 1000, 15, 5, 1000, 100, 0.3, 0.3, 5000, 5000, 
        250, 3, 0.01, 1, 0.01, 0.003, 0.05, 5, 0.001, 0.01, 0.00004]
 
@@ -25,7 +27,7 @@ if Opt == '2':
     df = read_excel('data.xlsx', sheet_name=0, header=None)
     data_list = []
     Vn_data = []
-    Nsf_data  =[]
+    Nsf_data = []
     for row in df.values:
         row_list = []
         for cell in row:
@@ -82,6 +84,8 @@ def WQI ():
     K = 1 / S
 
     for i in range(numbers):
+        Value = ['Observed Value']
+        SN = ['Standard Values']
         WI = ['Wi']
         WQI = ['WQI']
         WQ = ['Water Quality']
@@ -95,6 +99,9 @@ def WQI ():
                 qn = ((Vn[j][i] - V_I[j]) / (S_N[j] - V_I[j])) * 100
                 qiwi += qn * Wn
                 wi += Wn
+                Para.append(PARA[j])
+                Value.append(str(Vn[j][i]))
+                SN.append(S_N[j])
                 WI.append(str(Wn))
                 WQI.append("")
                 WQ.append("")
@@ -103,6 +110,7 @@ def WQI ():
         wqi.append(qiwi / wi)
         e = math.ceil(len(WI)/2)
         WQI[e] = str(wqi[i])
+        
 
 
         #print("WQI = " + str(wqi[i]))
@@ -128,7 +136,7 @@ def WQI ():
             WQ[e] ='Unfit for Drinking'
             G[e] = 'E'
            # print("The Quality of the water is Unfit for Drinking and it's grade is E")
-        Out = list(zip(WI, WQI, WQ, G))
+        Out = list(zip(Para,Value, SN, WI, WQI, WQ, G))
         Output.append(Out)
     #print(wqi)
     #print(Output)
@@ -190,7 +198,12 @@ def CWQI():
         G = 'Poor'
         #print("The Quality of the water is Poor")
 
-    Output = [['CWQi', 'Water Quality'], [str(CWQI), G]]
+    Output = [['Parameters', 'f1','f2','f3','CWQi', 'Water Quality']]
+    for i in Para:
+        Output.append([i])
+    Output[math.ceil(len(Para)/2)].extend([str(F1), str(F2), str(F3), str(CWQI), G])
+    
+    # Output = [['f1','f2','f3','CWQi', 'Water Quality'], [str(F1), str(F2), str(F3), str(CWQI), G]]
     return Output
 
 def NSF():
@@ -881,6 +894,8 @@ def NSF():
     NSF_Y = [[-1.0] * nsf_num for _ in range(p)]
 
     # print(NSF_S)
+    Parameters = ['Parameters']
+    value = ['Observed Value']
     Qi = ['Qi']
     NSFWqi = ['NSFWQI']
     WQ = ['Water Quality']
@@ -897,6 +912,8 @@ def NSF():
                         y2 = NSF_S[i][k][1]
                         d = (y2-y1)/(x2-x1)
                         NSF_Y[i][j] = y1 + d*(x-x1)
+                        Parameters.append (Para_NSF[i])
+                        value.append (str(Vn_NSF[i][j]))
                         Qi.append (str(NSF_Y[i][j]))
                         NSFWqi.append("")
                         WQ.append("")
@@ -932,7 +949,7 @@ def NSF():
         WQ[e] = 'Very poor'
         #print("The Quality of the water is Very Poor")
     
-    Output = list(zip(Qi, NSFWqi, WQ))
+    Output = list(zip(Parameters, value, Qi, NSFWqi, WQ))
     return Output
 
 
